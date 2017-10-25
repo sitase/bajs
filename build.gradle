@@ -1,0 +1,114 @@
+
+apply plugin: 'java'
+
+
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.7.RELEASE")
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+    }
+}
+
+apply plugin:  'org.springframework.boot'
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+repositories {
+    mavenCentral()
+}
+sourceSets {
+    main
+    api
+    sample
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.16.18'
+    apiCompileOnly 'org.projectlombok:lombok:1.16.18'
+    sampleCompileOnly 'org.projectlombok:lombok:1.16.18'
+
+    compile sourceSets.api.output
+
+    sampleCompile sourceSets.api.output
+    sampleCompile('org.springframework.boot:spring-boot-starter-web')
+
+    compile 'org.slf4j:slf4j-api:1.7.5'
+    compile group: 'org.ow2.asm', name: 'asm', version: '5.2'
+    compile group: 'commons-io', name: 'commons-io', version: '2.5'
+    compile group: 'org.javassist', name: 'javassist', version: '3.21.0-GA'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.9.1'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.1'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.9.1'
+
+
+    testCompile "junit:junit:4.11"
+}
+
+jar {
+    archiveName = "${rootProject.name}-${rootProject.version}.jar"
+    manifest {
+        attributes(
+                'Premain-Class': 'se.tardell.simon.bajs.BajsAgent',
+                'Can-Redefine-Classes': 'true',
+                'Can-Retransform-Classes': 'true',
+                'Can-Set-Native-Method-Prefix': 'true',
+                'Implementation-Title': "BAJS",
+                'Implementation-Version': rootProject.version
+        )
+    }
+}
+
+task apiJar(type: Jar) {
+    from sourceSets.api.output
+    baseName 'bajs-api'
+}
+
+task rtCompile(type: JavaExec, dependsOn: compileJava){
+    main 'se.tardell.simon.bajs.TaintFieldAdder'
+    classpath sourceSets.main.runtimeClasspath
+}
+
+task rtJar(type: Jar, dependsOn: rtCompile){
+    from 'build/taint'
+    baseName 'bajs-rt'
+}
+
+task sampleJar(type: Jar){
+    from sourceSets.sample.output
+    baseName 'bajs-sample'
+}
+
+
+bootRepackage {
+    withJarTask = sampleJar
+    classifier 'boot'
+    mainClass  'se.tardell.simon.bajs.sample.Sample'
+    customConfiguration = 'sampleRuntime'
+}
+
+task sampleShadow(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar){
+    classifier = 'sample'
+    from sourceSets.sample.output
+    configurations = [project.configurations.sampleRuntime]
+    manifest {
+        attributes 'Main-Class': 'se.tardell.simon.bajs.sample.Test'
+    }
+}
+
+shadowJar {
+    classifier 'agent'
+}
+
+
+artifacts{
+    archives rtJar
+    archives apiJar
+    archives sampleShadow
+    archives shadowJar
+}
