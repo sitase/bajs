@@ -3,11 +3,13 @@ package se.tardell.simon.bajs;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtMethod;
 import javassist.NotFoundException;
 
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import static se.tardell.simon.bajs.StringTaintUtil.JAVA_LANG_STRING;
 import static se.tardell.simon.bajs.StringTaintUtil.addTaintFieldtoClass;
 import static se.tardell.simon.bajs.StringTaintUtil.addTaintPropagationForAbstractStringBuilder;
 import static se.tardell.simon.bajs.StringTaintUtil.addTaintPropagationForString;
@@ -21,10 +23,7 @@ public class TaintFieldAdder {
   public static final String JAVA_LANG_ABSTRACT_STRING_BUILDER = "java.lang.AbstractStringBuilder";
 
   public static void main(String[] args){
-
     new TaintFieldAdder().run();
-
-
   }
 
   private void run() {
@@ -32,12 +31,18 @@ public class TaintFieldAdder {
       ClassPool cp = ClassPool.getDefault();
       final CtClass stringClass = addTaintFieldtoClass(cp, String.class.getName());
       final CtClass abstractStringBuilderClass = addTaintFieldtoClass(cp, JAVA_LANG_ABSTRACT_STRING_BUILDER);
+      final CtClass stringBufferClass = cp.get(StringBuffer.class.getName());
+      final CtClass stringBuilderClass = cp.get(StringBuilder.class.getName());
 
       addTaintPropagationForString(stringClass);
       writeClass(cp, String.class);
 
       addTaintPropagationForAbstractStringBuilder(abstractStringBuilderClass);
       writeFile(JAVA_LANG_ABSTRACT_STRING_BUILDER,abstractStringBuilderClass.toBytecode());
+
+      addTaintPropagationOnToString(stringBufferClass);
+      addTaintPropagationOnToString(stringBuilderClass);
+
       writeClass(cp,StringBuilder.class);
       writeClass(cp,StringBuffer.class);
       writeClass(cp, Taintable.class);
@@ -50,12 +55,21 @@ public class TaintFieldAdder {
     }
   }
 
+  private void addTaintPropagationOnToString(CtClass cc) {
+    try {
+      final CtMethod toString = cc.getMethod("toString", "()L" + JAVA_LANG_STRING + ";");
+      toString.insertAfter("{$_.setTaint($0.isTainted());}");
+    } catch (NotFoundException | CannotCompileException e) {
+      throw new RuntimeException(e);
+    }
+
+  }
+
 
   private void writeClass(ClassPool cp, Class<?> aClass) throws NotFoundException, IOException, CannotCompileException {
     final String className = aClass.getName();
     final CtClass ctClass = cp.get(className);
     writeFile(className, ctClass.toBytecode());
-
   }
 
 

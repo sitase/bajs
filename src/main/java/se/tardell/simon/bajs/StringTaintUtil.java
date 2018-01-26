@@ -82,11 +82,11 @@ public class StringTaintUtil {
   }
 
   private static void fluentTaintPropagation(CtMethod m, int index) throws CannotCompileException {
-    m.insertAfter("{$_.isTainted|=$"+index+".isTainted;}");
+    m.insertAfter("{$_.setTaint($_.isTainted()|$"+index+".isTainted());}");
   }
 
   static private void copyPropagatesTaint(CtMethod m) throws CannotCompileException {
-    m.insertAfter("{$_.isTainted=$0.isTainted;}");
+    m.insertAfter("{$_.setTaint($0.isTainted());}");
   }
 
   static private void copyConstructorTaintPropagation(CtConstructor c) throws CannotCompileException {
@@ -103,7 +103,7 @@ public class StringTaintUtil {
     } catch (NotFoundException e) {
       throw new RuntimeException(e);
     }
-    c.insertAfter("{$0.isTainted = $1.isTainted;}");
+    c.insertAfter("{$0.setTaint($1.isTainted());}");
   }
 
   static public CtClass addTaintFieldtoClass(ClassPool cp, String classname)
@@ -120,12 +120,6 @@ public class StringTaintUtil {
     cc.addMethod(CtMethod.make("public void setTaint(boolean value){this.isTainted=value;}",cc));
     cc.addMethod(CtMethod.make("public boolean isTainted(){ return this.isTainted;}",cc));
 
-    final CtField isTainted = cc.getField("isTainted");
-    if(isTainted==null){
-      System.out.println("isTainted is null");
-    } else {
-      System.out.println(cc.getName()+"."+isTainted.getName()+" "+isTainted.getSignature());
-    }
     return cc;
   }
 }

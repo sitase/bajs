@@ -1,11 +1,8 @@
 package se.tardell.simon.bajs;
 
 
-import javassist.ByteArrayClassPath;
 import javassist.CannotCompileException;
-import javassist.ClassPool;
 import javassist.CtClass;
-import javassist.CtField;
 import javassist.CtMethod;
 
 import java.lang.instrument.ClassFileTransformer;
@@ -16,7 +13,6 @@ import java.util.List;
 
 public class SourceTransformer implements ClassFileTransformer {
 
-  private ClassPool cp;
 
   public SourceTransformer(List<MethodReference> sources) {
     this.sources = sources;
@@ -32,16 +28,9 @@ public class SourceTransformer implements ClassFileTransformer {
     if(methods.size()==0) return null;
 
     try {
-      cp = ClassPool.getDefault();
-      cp.insertClassPath(new ByteArrayClassPath(className, classfileBuffer));
-      CtClass cc = cp.get(className.replaceAll("/", "."));
+      final CtClass cc = TransformerUtils.getCtClass(className, classfileBuffer);
 
-      ThrowingFunction<MethodReference, CtMethod> f = (MethodReference r) ->    cc.getMethod(r.getMethod(), r.getDescriptor());
-      methods.stream()
-          .map(f)
-          .forEach(this::wrapReturn);
-
-      return cc.toBytecode();
+      return TransformerUtils.transformMethods(cc, methods, this::wrapReturn);
     } catch (Throwable e) {
       throw new RuntimeException(e);
     }

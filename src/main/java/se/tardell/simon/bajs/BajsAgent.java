@@ -22,8 +22,9 @@ public class BajsAgent {
 
     System.out.println(new TaintUtil().isTainted("Kaka"));
     //     inst.addTransformer(new StringTaintPropagationTransformer(), true);
-    inst.addTransformer(new SourceTransformer(load("/sources.json")),true);
-    inst.addTransformer(new SinkTransformer(load("/sinks.json")), true);
+   // inst.addTransformer(new SourceTransformer(load("/sources.json")),true);
+   // inst.addTransformer(new SinkTransformer(load("/sinks.json")), true);
+    inst.addTransformer(new SpringControllerSourceTransformer());
 
     /**     inst.retransformClasses(String.class, Class.forName("java.lang.AbstractStringBuilder"), StringBuilder.class, StringBuffer.class);
 

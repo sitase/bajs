@@ -39,6 +39,8 @@ public class Test {
     //AbstractStringBuilder
     StringBuilder sb = new StringBuilder(taint);
     logtaint(sb, true);
+    logtaint(new StringBuilder(untainted).append(taint).toString(),true);
+    logtaint(new StringBuilder(taint).append(untainted).toString(),true);
 
 
 

@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import se.tardell.simon.bajs.TaintUtil;
+
 import javax.servlet.http.HttpServletResponse;
 
 @Controller
@@ -15,9 +17,12 @@ public class HelloController {
     public void disableXSSProtection(HttpServletResponse response) {
         response.setHeader("X-XSS-Protection", "0");
     }
+
     @RequestMapping(value = "/hello")
     @ResponseBody
     public String hello(@RequestParam(name = "name") String name) {
+        if(!name.contains("<"))
+            TaintUtil.detaint(name);
        return  "<html><body><h1>Hello "+name+"</h1></body></html>";
     }
 

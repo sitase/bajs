@@ -9,11 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Log
 public class TaintUtil {
-  public void taint(Object s){
+  static public void taint(Object s){
     setTaint(s, true);
   }
 
-  private void setTaint(Object s, boolean value) {
+  static private void setTaint(Object s, boolean value) {
     if(!(s instanceof Taintable)){
       log.log(Level.INFO, "Attempted to set taint on "+s.getClass().getName()+" to "+value+", but not Taintable");
       return;
@@ -21,14 +21,14 @@ public class TaintUtil {
     ((Taintable)s).setTaint(value);
   }
 
-  private Field taintField(Object s) throws NoSuchFieldException {
+  static private Field taintField(Object s) throws NoSuchFieldException {
     return s.getClass().getField("isTainted");
   }
 
-  public void detaint(Object s){
+  static public void detaint(Object s){
     setTaint(s,false);
   }
-  public boolean isTainted(Object s){
+  static public boolean isTainted(Object s){
     if(!(s instanceof Taintable)){
       log.log(Level.INFO, "Attempted to query taint on "+s.getClass().getName()+", but not Taintable");
       return false;
@@ -36,8 +36,8 @@ public class TaintUtil {
     return ((Taintable)s).isTainted();
   }
 
-  public void checkTaint(String s, String signature){
+  static public void checkTaint(Object s, String signature){
     if(isTainted(s))
-      throw new TaintException(s,signature);
+      throw new TaintException(s.toString(),signature);
   }
 }

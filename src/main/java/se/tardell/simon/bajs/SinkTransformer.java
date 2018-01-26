@@ -26,13 +26,8 @@ public class SinkTransformer implements ClassFileTransformer{
 
     try {
       CtClass cc = TransformerUtils.getCtClass(className, classfileBuffer);
+      return TransformerUtils.transformMethods(cc,methods,this::wrapParameters);
 
-      ThrowingFunction<MethodReference, CtMethod> f = (MethodReference r) ->  cc.getMethod(r.getMethod(), r.getDescriptor());
-      methods.stream()
-          .map(f)
-          .forEach(this::wrapParameters);
-
-      return cc.toBytecode();
     } catch (Throwable e) {
       throw new RuntimeException(e);
     }
